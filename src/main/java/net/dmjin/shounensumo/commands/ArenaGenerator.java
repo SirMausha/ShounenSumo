@@ -1,25 +1,23 @@
 package net.dmjin.shounensumo.commands;
 
-import net.dmjin.shounensumo.commands.manager.BlockStateManager;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.BlockState;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.Stack;
-
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class ArenaGenerator implements CommandExecutor {
 
-    // Create a new instance of the BlockStateManager
-    private BlockStateManager blockStateManager;
-    public ArenaGenerator(BlockStateManager blockStateManager) {
-        this.blockStateManager = blockStateManager;
+    private final Plugin plugin; // Add plugin variable to store the plugin instance
+
+    // Constructor
+    public ArenaGenerator(Plugin plugin) {
+        this.plugin = plugin;
     }
 
     @Override
@@ -36,16 +34,16 @@ public class ArenaGenerator implements CommandExecutor {
 
         // Default radius, declare x, y and z and material
         int radius = 10;
-        int x, y, z;
+        int centerX, centerY, centerZ;
         Material material = Material.STONE;
 
         // Parse the radius argument if one was provided
         if (args.length >= 4) {
             try {
                 radius = Integer.parseInt(args[0]);
-                x = Integer.parseInt(args[1]);
-                y = Integer.parseInt(args[2]);
-                z = Integer.parseInt(args[3]);
+                centerX = Integer.parseInt(args[1]);
+                centerY = Integer.parseInt(args[2]);
+                centerZ = Integer.parseInt(args[3]);
             } catch (NumberFormatException e) { // If the arguments are invalid, notify the player and return
                 player.sendMessage(ChatColor.RED + "Invalid arguments!");
                 return true;
@@ -55,30 +53,40 @@ public class ArenaGenerator implements CommandExecutor {
             return true;
         }
 
+        player.sendMessage(ChatColor.GREEN + "Arena generation started...");
 
-        // Generate the arena
-        generateArena(player, material, radius, x, y, z);
+        // Run the generation in a separate thread
+        int finalRadius = radius;
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Generate the arena
+                generateArena(player, material, finalRadius, centerX, centerY, centerZ);
 
-        // Notify the player and add modified block states to the stack
-        sender.sendMessage(ChatColor.GREEN + "Arena generated!");
-        blockStateManager.restoreBlockStates();
-        blockStateManager = new BlockStateManager();
-
+                // Notify the player that the arena generation has finished
+                player.sendMessage(ChatColor.GREEN + "Arena generated!");
+            }
+        }.runTaskAsynchronously(plugin);
 
         return true;
     }
 
-    private void generateArena(Player player, Material material, int radius, int x, int y, int z) {
+    private void generateArena(Player player, Material material, int radius, int centerX, int centerY, int centerZ) {
         // Generate the arena
         World world = player.getWorld();
 
         // Generate the floor
 
-        for (int i = -radius; i <= radius; i++) {
-            for (int j = -radius; j <= radius; j++) {
-                BlockState state = world.getBlockAt(x + i, y, z + j).getState();
-                state.setType(material);
-                blockStateManager.addBlockState(state);
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (x * x + z * z <= radius * radius) {
+                    int blockX = centerX + x;
+                    int blockY = centerY;
+                    int blockZ = centerZ + z;
+
+                    Block block = world.getBlockAt(blockX, blockY, blockZ);
+                    block.setType(material);
+                }
             }
         }
     }
