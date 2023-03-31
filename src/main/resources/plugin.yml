@@ -1,0 +1,21 @@
+name: ShounenSumo
+version: '${project.version}'
+main: net.dmjin.shounensumo.ShounenSumo
+api-version: 1.19
+authors: [ DMJin ]
+description: ShounenSumo plugin
+commands:
+  arenagen:
+    description: Generate arena
+    aliases: [ agg ]
+    permission: shounensumo.arena
+    permission-message: &cYou don't have permission to use this command.
+    usage: /arena <radius> <x> <y> <z>
+    default: true
+  arenaundo:
+    description: Undo arena
+    aliases: [ agu ]
+    permission: shounensumo.arena
+    permission-message: &cYou don't have permission to use this command.
+    usage: /arenaundo
+    default: true
