@@ -19,3 +19,10 @@ commands:
     permission-message: &cYou don't have permission to use this command.
     usage: /arenaundo
     default: true
+  weditgenerator:
+    description: worldedit generator
+    aliases: [ weg ]
+    permission: shounensumo.arena
+    permission-message: &cYou don't have permission to use this command.
+    usage: /weditgenerator
+    default: true
