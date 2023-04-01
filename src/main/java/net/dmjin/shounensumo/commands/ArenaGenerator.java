@@ -36,6 +36,7 @@ public class ArenaGenerator implements CommandExecutor {
         int radius = 10;
         int centerX, centerY, centerZ;
         Material material = Material.STONE;
+        int resolution = 360;
 
         // Parse the radius argument if one was provided
         if (args.length >= 4) {
@@ -57,36 +58,46 @@ public class ArenaGenerator implements CommandExecutor {
 
         // Run the generation in a separate thread
         int finalRadius = radius;
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // Generate the arena
-                generateArena(player, material, finalRadius, centerX, centerY, centerZ);
 
-                // Notify the player that the arena generation has finished
-                player.sendMessage(ChatColor.GREEN + "Arena generated!");
-            }
-        }.runTaskAsynchronously(plugin);
+        generateArena(player, material, finalRadius, centerX, centerY, centerZ, resolution);
+
+        player.sendMessage(ChatColor.GREEN + "Arena generated!");
 
         return true;
     }
 
-    private void generateArena(Player player, Material material, int radius, int centerX, int centerY, int centerZ) {
-        // Generate the arena
+    private void generateArena(Player player, Material material, int radius, int centerX, int centerY, int centerZ, int resolution) {
+        // Get the world the player is in
         World world = player.getWorld();
 
-        // Generate the floor
+        // Initialize variables for the circle drawing algorithm
+        int x = radius;
+        int y = 0;
+        int decisionOver2 = 1 - x;
 
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                if (x * x + z * z <= radius * radius) {
-                    int blockX = centerX + x;
-                    int blockY = centerY;
-                    int blockZ = centerZ + z;
+        // Loop over each point in the circle
+        while (y <= x) {
+            // Draw blocks along the top and bottom of the circle
+            for (int i = -x; i <= x; i++) {
+                world.getBlockAt(centerX + i, centerY, centerZ + y).setType(material);
+                world.getBlockAt(centerX + i, centerY, centerZ - y).setType(material);
+            }
 
-                    Block block = world.getBlockAt(blockX, blockY, blockZ);
-                    block.setType(material);
-                }
+            // Draw blocks along the left and right sides of the circle
+            for (int i = -y; i <= y; i++) {
+                world.getBlockAt(centerX + i, centerY, centerZ + x).setType(material);
+                world.getBlockAt(centerX + i, centerY, centerZ - x).setType(material);
+            }
+
+            // Increment the current Y-coordinate
+            y++;
+
+            // Update the decision variable for the circle drawing algorithm
+            if (decisionOver2 <= 0) {
+                decisionOver2 += 2 * y + 1;
+            } else {
+                x--;
+                decisionOver2 += 2 * (y - x) + 1;
             }
         }
     }
