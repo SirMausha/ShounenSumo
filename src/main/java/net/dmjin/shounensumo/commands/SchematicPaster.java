@@ -35,7 +35,7 @@ public class SchematicPaster implements CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player) || !sender.hasPermission("shounensumo.weditgen")) {
-            sender.sendMessage("This command can only be run by a player.");
+            sender.sendMessage("You do not have permission to use this command.");
             return true;
         }
 
@@ -44,18 +44,28 @@ public class SchematicPaster implements CommandExecutor {
             return true;
         }
 
+
         Player player = (Player) sender;
         Location location = player.getLocation();
 
-        player.sendMessage("Loading schematic...");
+        // Paste method
+        pasteSchematic(player, location, args[0]);
 
+        return true;
+    }
+
+    public void pasteSchematic(Player player, Location location, String args) {
+
+        // Check if WorldEdit is installed
         WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
         if (worldEditPlugin == null) {
             player.sendMessage("WorldEdit plugin not found. Please ensure it is installed.");
-            return true;
+            return;
         }
+
+        // Get the schematic file
         File worldEditDirectory = worldEditPlugin.getDataFolder().toPath().resolve("schematics").toFile();
-        File file = new File(worldEditDirectory, args[0] + ".schem");
+        File file = new File(worldEditDirectory, args + ".schem");
 
 
         // Load the clipboard
@@ -64,19 +74,19 @@ public class SchematicPaster implements CommandExecutor {
         try (ClipboardReader reader = format.getReader(Files.newInputStream(file.toPath()))) {
             clipboard = reader.read();
             player.sendMessage("Loaded schematic: " + file.getName() + "");
-        } catch (IOException e) {
+        } catch (NullPointerException | IOException e) {
             player.sendMessage("Failed to load clipboard.");
         }
 
         // Paste the clipboard
         try (EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(player.getWorld()), -1)) {
-            player.sendMessage("Pasting clipboard...");
             Operation operation = new ClipboardHolder(clipboard)
                     .createPaste(editSession)
                     .to(BlockVector3.at(location.getX(), location.getY(), location.getZ()))
                     .ignoreAirBlocks(false)
                     .build();
 
+            // Execute the operation
             try {
                 Operations.complete(operation);
                 player.sendMessage("Schematic pasted successfully.");
@@ -84,7 +94,5 @@ public class SchematicPaster implements CommandExecutor {
                 player.sendMessage("Failed to paste schematic.");
             }
         }
-
-        return true;
     }
 }
