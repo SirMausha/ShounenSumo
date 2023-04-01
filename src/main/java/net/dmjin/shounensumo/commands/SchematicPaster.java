@@ -4,16 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import com.sk89q.worldedit.WorldEditException;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.*;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.World;
 import net.dmjin.shounensumo.ShounenSumo;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -21,9 +22,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import com.sk89q.worldedit.extent.clipboard.Clipboard;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
-import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class SchematicPaster implements CommandExecutor {
@@ -45,7 +44,6 @@ public class SchematicPaster implements CommandExecutor {
             return true;
         }
 
-
         Player player = (Player) sender;
         Location location = player.getLocation();
 
@@ -56,66 +54,72 @@ public class SchematicPaster implements CommandExecutor {
     }
 
     public void pasteSchematic(Player player, Location location, String args) {
-
-        // Check if WorldEdit is installed
-        WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
-        if (worldEditPlugin == null) {
-            player.sendMessage("WorldEdit plugin not found. Please ensure it is installed.");
+        Plugin fastAsyncWorldEditPlugin = Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
+        if (fastAsyncWorldEditPlugin == null) {
+            player.sendMessage("FastAsyncWorldEdit plugin not found. Please ensure it is installed.");
             return;
         }
 
-        // Get the schematic file
-        File worldEditDirectory = worldEditPlugin.getDataFolder().toPath().resolve("schematics").toFile();
-        File file = new File(worldEditDirectory, args + ".schem");
+        File schematicsFolder = new File(fastAsyncWorldEditPlugin.getDataFolder(), "schematics");
+        File file = new File(schematicsFolder, args + ".schem");
 
-
-        // Load the clipboard
-        loadClipboardAsync(player, location, file);
+        Clipboard clipboard = loadClipboard(file);
+        if (clipboard != null) {
+            pasteClipboard(player, location, clipboard);
+        } else {
+            player.sendMessage("Failed to load clipboard.");
+        }
     }
 
-    private void loadClipboardAsync(Player player, Location location, File file) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // Load the clipboard
-                ClipboardFormat format = ClipboardFormats.findByFile(file);
-                Clipboard clipboard = null;
-                try (ClipboardReader reader = format.getReader(Files.newInputStream(file.toPath()))) {
-                    clipboard = reader.read();
-                    player.sendMessage("Loaded schematic: " + file.getName() + "");
-                } catch (NullPointerException | IOException e) {
-                    player.sendMessage("Failed to load clipboard.");
-                }
-
-                // Paste the clipboard
-                pasteClipboard(player, location, clipboard);
-            }
-        }.runTaskAsynchronously(plugin);
+    private Clipboard loadClipboard(File file) {
+        ClipboardFormat format = ClipboardFormats.findByFile(file);
+        try (ClipboardReader reader = format.getReader(Files.newInputStream(file.toPath()))) {
+            return reader.read();
+        } catch (NullPointerException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void pasteClipboard(Player player, Location location, Clipboard clipboard) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Paste the clipboard
-                try (EditSession editSession = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(player.getWorld()), -1)) {
-                    Operation operation = new ClipboardHolder(clipboard)
-                            .createPaste(editSession)
-                            .to(BlockVector3.at(location.getX(), location.getY(), location.getZ()))
-                            .ignoreAirBlocks(false)
-                            .build();
+                try {
+                    // Create a new edit session
+                    World world = BukkitAdapter.adapt(player.getWorld());
+                    EditSessionBuilder builder = WorldEdit.getInstance().newEditSessionBuilder();
 
-                    // Execute the operation
-                    try {
-                        Operations.complete(operation);
-                        player.sendMessage("Schematic pasted successfully.");
-                    } catch (WorldEditException e) {
-                        player.sendMessage("Failed to paste schematic.");
+                    // Set the maximum number of blocks to change to -1 to allow unlimited
+                    builder.world(world).maxBlocks(-1);
+
+                    // Paste the clipboard
+                    try (EditSession editSession = builder.build()) {
+                        Operation operation = new ClipboardHolder(clipboard)
+                                .createPaste(editSession)
+                                .to(BlockVector3.at(location.getX(), location.getY(), location.getZ()))
+                                .ignoreAirBlocks(false)
+                                .build();
+
+                        // Execute the operation
+                        try {
+                            Operations.complete(operation);
+                            player.sendMessage("Schematic pasted successfully.");
+                        } catch (WorldEditException e) {
+                            player.sendMessage("Failed to paste schematic.");
+                        }
                     }
+                } catch (Exception e) {
+                    player.sendMessage("An error occurred while pasting the schematic.");
+                    e.printStackTrace();
                 }
             }
         }.runTask(plugin);
     }
 
 
+
+
+
 }
+
