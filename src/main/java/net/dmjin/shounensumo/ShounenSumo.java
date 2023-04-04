@@ -11,6 +11,7 @@ import java.util.List;
 
 public final class ShounenSumo extends JavaPlugin {
 
+
     public static List<ServerPlayer> npcs = new ArrayList<>();
 
     @Override
@@ -25,9 +26,7 @@ public final class ShounenSumo extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MovementListener(), this);
 
     }
-
     public static List<ServerPlayer> getNpcs() {
         return npcs;
     }
-
 }
