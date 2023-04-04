@@ -34,7 +34,7 @@ public class SchematicPaster implements CommandExecutor {
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player) || !sender.hasPermission("shounensumo.weditgen")) {
+        if (!(sender instanceof Player) || !sender.hasPermission("shounensumo.admin")) {
             sender.sendMessage("You do not have permission to use this command.");
             return true;
         }
@@ -54,15 +54,18 @@ public class SchematicPaster implements CommandExecutor {
     }
 
     public void pasteSchematic(Player player, Location location, String args) {
+        // Check if FAWE is installed
         Plugin fastAsyncWorldEditPlugin = Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
         if (fastAsyncWorldEditPlugin == null) {
             player.sendMessage("FastAsyncWorldEdit plugin not found. Please ensure it is installed.");
             return;
         }
 
+        // Load the schematic
         File schematicsFolder = new File(fastAsyncWorldEditPlugin.getDataFolder(), "schematics");
         File file = new File(schematicsFolder, args + ".schem");
 
+        // Load the clipboard
         Clipboard clipboard = loadClipboard(file);
         if (clipboard != null) {
             pasteClipboard(player, location, clipboard);
@@ -72,7 +75,9 @@ public class SchematicPaster implements CommandExecutor {
     }
 
     private Clipboard loadClipboard(File file) {
+
         ClipboardFormat format = ClipboardFormats.findByFile(file);
+
         try (ClipboardReader reader = format.getReader(Files.newInputStream(file.toPath()))) {
             return reader.read();
         } catch (NullPointerException | IOException e) {
@@ -114,12 +119,7 @@ public class SchematicPaster implements CommandExecutor {
                     e.printStackTrace();
                 }
             }
-        }.runTask(plugin);
+        }.runTaskAsynchronously(plugin);
     }
-
-
-
-
-
 }
 

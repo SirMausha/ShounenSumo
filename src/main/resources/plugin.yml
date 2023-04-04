@@ -4,25 +4,19 @@ main: net.dmjin.shounensumo.ShounenSumo
 api-version: 1.19
 authors: [ DMJin ]
 description: ShounenSumo plugin
+depend: [ProtocolLib]
 commands:
-  arenagen:
-    description: Generate arena
-    aliases: [ agg ]
-    permission: shounensumo.arena
+  arenagenerator:
+    description: Pastes the given arena schematic
+    aliases: [ ag ]
+    permission: shounensumo.admin
     permission-message: &cYou don't have permission to use this command.
-    usage: /arena <radius> <x> <y> <z>
+    usage: /<command> <arenaName>
     default: true
-  arenaundo:
-    description: Undo arena
-    aliases: [ agu ]
-    permission: shounensumo.arena
+  sumonpc:
+    description: Summons the Sumo NPC
+    aliases: [ ssnpc ]
+    permission: shounensumo.admin
     permission-message: &cYou don't have permission to use this command.
-    usage: /arenaundo
-    default: true
-  weditgenerator:
-    description: worldedit generator
-    aliases: [ weg ]
-    permission: shounensumo.arena
-    permission-message: &cYou don't have permission to use this command.
-    usage: /weditgenerator
+    usage: /<command>
     default: true
