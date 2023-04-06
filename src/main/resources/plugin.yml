@@ -5,6 +5,7 @@ api-version: 1.19
 authors: [ DMJin ]
 description: ShounenSumo plugin
 depend: [ProtocolLib]
+softdepend: ['Multiverse-Core']
 commands:
   arenagenerator:
     description: Pastes the given arena schematic
@@ -19,4 +20,11 @@ commands:
     permission: shounensumo.admin
     permission-message: &cYou don't have permission to use this command.
     usage: /<command>
+    default: true
+  worldcreator:
+    description: Creates the world for the given arena
+    aliases: [ wc ]
+    permission: shounensumo.admin
+    permission-message: &cYou don't have permission to use this command.
+    usage: /<command> <parameters>
     default: true
